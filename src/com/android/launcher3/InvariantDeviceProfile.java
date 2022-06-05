@@ -535,6 +535,7 @@ public class InvariantDeviceProfile implements OnSharedPreferenceChangeListener 
             case KEY_SHOW_DRAWER_LABELS:
             case KEY_ICON_SIZE:
             case KEY_FONT_SIZE:
+            case DeviceProfile.KEY_ROW_HEIGHT:
                 onConfigChanged(mContext);
                 break;
         }
