@@ -152,4 +152,10 @@
     <!-- Auto keyboard -->
     <string name="pref_auto_keyboard_title">Auto keyboard</string>
     <string name="pref_auto_keyboard_summary">Start searching when the drawer is expanded</string>
+
+    <!-- A widget category label for grouping widgets related to battery. [CHAR_LIMIT=30] -->
+    <string name="widget_category_battery">Battery</string>
+
+    <!-- A widget category label for grouping widgets related to weather. [CHAR_LIMIT=30] -->
+    <string name="widget_category_weather">Weather</string>
 </resources>
