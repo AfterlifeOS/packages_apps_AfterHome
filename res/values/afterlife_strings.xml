@@ -134,6 +134,9 @@
     <string name="show_top_shadow_summary">Show top shadow in home screen layout</string>
     
     <!-- Recents icons -->
+    <string name="recents_chips_title">Use compact action design</string>
+    <string name="recents_chips_summary">May be required for large numbers of actions to display</string>
+    
     <string name="recents_screenshot_title">Screenshot</string>
     <string name="recents_screenshot_summary">Show Screenshot button on recent apps</string>
     <string name="recents_clear_all_title">Clear all</string>
@@ -158,4 +161,6 @@
 
     <!-- A widget category label for grouping widgets related to weather. [CHAR_LIMIT=30] -->
     <string name="widget_category_weather">Weather</string>
+
+
 </resources>

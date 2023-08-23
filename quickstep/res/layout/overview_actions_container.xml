@@ -27,14 +27,19 @@
         android:orientation="horizontal">
 
         <Space
-            android:id="@+id/action_screenshot_space"
+            android:id="@+id/screenshot_space"
             android:layout_width="0dp"
             android:layout_height="1dp"
-            android:layout_weight="1"
-            android:visibility="gone" />
+            android:layout_weight="1" />
 
         <Button
             android:id="@+id/action_screenshot"
+            style="@style/OverviewActionButton"
+            android:text="@string/recents_screenshot_title"
+            android:drawableStart="@drawable/ic_screenshot" />
+
+        <Button
+            android:id="@+id/action2_screenshot"
             style="@style/OverviewActionChip"
             android:foreground="@drawable/ic_screenshot" />
 
@@ -47,18 +52,31 @@
 
         <Button
             android:id="@+id/action_split"
+            style="@style/OverviewActionButton"
+            android:layout_marginStart="@dimen/overview_actions_button_spacing"
+            android:text="@string/action_split"
+            android:visibility="gone" />
+            
+        <Button
+            android:id="@+id/action2_split"
             style="@style/OverviewActionChip"
             android:visibility="gone" />
 
         <Space
-            android:id="@+id/action_clear_all_space"
+            android:id="@+id/clear_all_space"
             android:layout_width="0dp"
             android:layout_height="1dp"
-            android:layout_weight="1"
-            android:visibility="gone" />
+            android:layout_weight="1" />
 
         <Button
             android:id="@+id/action_clear_all"
+            style="@style/OverviewActionButton"
+            android:layout_marginStart="@dimen/overview_actions_button_spacing"
+            android:text="@string/recents_clear_all_title"
+            android:drawableStart="@drawable/ic_clear_all" />
+
+        <Button
+            android:id="@+id/action2_clear_all"
             style="@style/OverviewActionChip"
             android:foreground="@drawable/ic_clear_all" />
 
