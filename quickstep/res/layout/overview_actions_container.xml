@@ -41,6 +41,7 @@
         <Button
             android:id="@+id/action2_screenshot"
             style="@style/OverviewActionChip"
+            android:tooltipText="@string/recents_screenshot_title"
             android:foreground="@drawable/ic_screenshot" />
 
         <Space
@@ -60,6 +61,7 @@
         <Button
             android:id="@+id/action2_split"
             style="@style/OverviewActionChip"
+            android:tooltipText="@string/action_split"
             android:visibility="gone" />
 
         <Space
@@ -78,6 +80,7 @@
         <Button
             android:id="@+id/action2_clear_all"
             style="@style/OverviewActionChip"
+            android:tooltipText="@string/recents_clear_all_title"
             android:foreground="@drawable/ic_clear_all" />
 
         <Space
