@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.util.AttributeSet;
 import android.widget.ImageView;
 import com.android.launcher3.qsb.QsbContainerView;
+import com.android.launcher3.Utilities;
 
 public class AssistantIconView extends ImageView {
 
@@ -21,12 +22,16 @@ public class AssistantIconView extends ImageView {
     }
 
     public void setListener(Context context) {
-        setOnClickListener(view -> {
-            Intent intent = new Intent(Intent.ACTION_MAIN);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            intent.setAction("android.intent.action.VOICE_COMMAND");
-            intent.setPackage(QsbContainerView.getSearchWidgetPackageName(context));
-            context.startActivity(intent);
-        });
+        try {
+            setOnClickListener(view -> {
+                Intent intent = new Intent(Intent.ACTION_MAIN);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                intent.setAction("android.intent.action.VOICE_COMMAND");
+                intent.setPackage(QsbContainerView.getSearchWidgetPackageName(context));
+                context.startActivity(intent);
+            });
+        } catch (Exception e) {
+            // Do nothing
+        }
     }
 }
