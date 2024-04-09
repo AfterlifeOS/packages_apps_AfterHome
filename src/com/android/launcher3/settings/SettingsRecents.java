@@ -48,6 +48,8 @@ import com.android.launcher3.LauncherFiles;
 import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.util.SettingsCache;
+import com.android.launcher3.LauncherAppState;
+import com.android.launcher3.LauncherPrefs;
 
 import com.android.settingslib.collapsingtoolbar.CollapsingToolbarBaseActivity;
 
