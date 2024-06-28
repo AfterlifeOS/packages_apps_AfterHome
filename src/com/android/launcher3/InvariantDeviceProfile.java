@@ -525,6 +525,10 @@ public class InvariantDeviceProfile implements OnSharedPreferenceChangeListener 
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
+        if (key.equals(LauncherPrefs.ENABLE_TWOLINE_ALLAPPS_TOGGLE.getKey())) {
+            onConfigChanged(mContext);
+            return;
+        }
         switch (key) {
             case KEY_ALLAPPS_THEMED_ICONS:
             case KEY_SHOW_DESKTOP_LABELS:
