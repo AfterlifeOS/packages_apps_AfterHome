@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
      Copyright (C) 2024-2025 The Clover Project
+                   2023-2025 AfterlifeOS
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -25,15 +26,19 @@
         <SwitchPreferenceCompat
             android:key="pref_recents_screenshot"
             android:title="@string/recents_screenshot_title"
+            android:summary="@string/recents_screenshot_summary"
             android:defaultValue="true"
             android:persistent="true"
-            launcher:iconSpaceReserved="false" />
+            launcher:iconSpaceReserved="false" 
+            launcher:layout="@layout/afl_preference_top" />
 
         <SwitchPreferenceCompat
             android:key="pref_recents_clear_all"
             android:title="@string/recents_clear_all_title"
+            android:summary="@string/recents_clear_all_summary"
             android:defaultValue="true"
             android:persistent="true"
-            launcher:iconSpaceReserved="false" />
+            launcher:iconSpaceReserved="false" 
+            launcher:layout="@layout/afl_preference_bottom" />
     </PreferenceCategory>
 </androidx.preference.PreferenceScreen>

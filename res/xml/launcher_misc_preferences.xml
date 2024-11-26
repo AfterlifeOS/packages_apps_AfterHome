@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
      Copyright (C) 2024-2025 The Clover Project
+                   2023-2025 AfterlifeOS
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -27,19 +28,22 @@
         android:persistent="true"
         launcher:logIdOn="615"
         launcher:logIdOff="616"
-        launcher:iconSpaceReserved="false" />
+        launcher:iconSpaceReserved="false" 
+        launcher:layout="@layout/afl_preference_top" />
 
     <androidx.preference.PreferenceScreen
         android:persistent="false"
         android:title="@string/suggestion_pref_screen_title"
         android:key="pref_suggestions"
-        android:summary="@string/suggestion_pref_screen_desc">
+        android:summary="@string/suggestion_pref_screen_desc"
+        launcher:layout="@layout/afl_preference_middle">
         <intent android:action="android.settings.ACTION_CONTENT_SUGGESTIONS_SETTINGS" />
     </androidx.preference.PreferenceScreen>
 
     <com.android.launcher3.settings.preference.RestartPreference
         android:key="pref_restart"
         android:title="@string/pref_restart_title"
-        android:summary="@string/pref_restart_summary" />
+        android:summary="@string/pref_restart_summary" 
+        launcher:layout="@layout/afl_preference_bottom" />
 
 </androidx.preference.PreferenceScreen>

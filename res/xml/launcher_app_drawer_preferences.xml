@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
      Copyright (C) 2024-2025 The Clover Project
+                   2023-2025 AfterlifeOS
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -24,14 +25,16 @@
         android:title="@string/pref_themed_icons_title"
         android:summary="@string/pref_themed_icons_summary"
         android:persistent="true"
-        launcher:iconSpaceReserved="false" />
+        launcher:iconSpaceReserved="false" 
+        launcher:layout="@layout/afl_preference_top" />
 
    <SwitchPreferenceCompat
         android:key="pref_drawer_search"
         android:title="@string/drawer_search_title"
         android:summary="@string/drawer_search_summary"
         android:defaultValue="true"
-        launcher:iconSpaceReserved="false" />
+        launcher:iconSpaceReserved="false" 
+        launcher:layout="@layout/afl_preference_middle" />
 
     <SwitchPreferenceCompat
         android:key="pref_auto_keyboard"
@@ -40,14 +43,17 @@
         android:defaultValue="false"
         android:persistent="true"
         android:dependency="pref_drawer_search"
-        launcher:iconSpaceReserved="false" />
+        launcher:iconSpaceReserved="false" 
+        launcher:layout="@layout/afl_preference_middle" />
 
     <SwitchPreferenceCompat
         android:key="pref_drawer_show_labels"
         android:title="@string/drawer_show_labels"
+        android:summary="@string/drawer_show_labels_summary"
         android:defaultValue="true"
         android:persistent="true"
-        launcher:iconSpaceReserved="false" />
+        launcher:iconSpaceReserved="false" 
+        launcher:layout="@layout/afl_preference_bottom" />
 
     <com.android.launcher3.settings.preferences.CustomSeekBarPreference
         android:key="pref_row_height"

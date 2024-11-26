@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
      Copyright (C) 2024-2025 The Clover Project
+                   2023-2025 AfterlifeOS
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -23,7 +24,8 @@
         android:key="pref_icon_badging"
         android:title="@string/notification_dots_title"
         android:persistent="false"
-        android:widgetLayout="@layout/notification_pref_warning" />
+        android:widgetLayout="@layout/notification_pref_warning" 
+        launcher:layout="@layout/afl_preference_single" />
 
     <com.android.launcher3.settings.preferences.CustomSeekBarPreference
         android:key="pref_custom_icon_size"
@@ -48,6 +50,7 @@
         android:title="@string/icon_two_lines_title"
         android:defaultValue="false"
         android:persistent="true"
-        launcher:iconSpaceReserved="false" />
+        launcher:iconSpaceReserved="false" 
+        launcher:layout="@layout/afl_preference_single" />
 
 </androidx.preference.PreferenceScreen>
