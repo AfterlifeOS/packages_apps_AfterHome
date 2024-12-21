@@ -18,6 +18,8 @@
 
     <dimen name="click_shadow_elevation">4dp</dimen>
 
+    <dimen name="theme_icon_size">24dp</dimen>
+
     <!-- Dynamic Grid -->
     <dimen name="dynamic_grid_edge_margin">10.77dp</dimen>
     <dimen name="dynamic_grid_left_right_margin">8dp</dimen>
