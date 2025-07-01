@@ -125,6 +125,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.res.Configuration;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
@@ -426,6 +427,28 @@ public class Launcher extends StatefulActivity<LauncherState>
     private final SettingsCache.OnChangeListener mNaturalScrollingChangedListener =
             enabled -> mIsNaturalScrollingEnabled = enabled;
 
+    private boolean mNeedsRestart = false;
+
+    private final OnSharedPreferenceChangeListener mSharedPrefListener =
+            (sharedPreferences, key) -> {
+                switch (key) {
+                    case Utilities.KEY_DOCK_SEARCH:
+                    case Utilities.KEY_DOCK_THEME:
+                    case Utilities.KEY_SEARCH_RADIUS:
+                    case Utilities.KEY_SHOW_HOTSEAT_BG:
+                    case Utilities.KEY_HOTSEAT_OPACITY:
+                    case Utilities.KEY_STATUS_BAR:
+                    case Utilities.KEY_SHORT_PARALLAX:
+                    case Utilities.KEY_SINGLE_PAGE_CENTER:
+                    case Utilities.KEY_HOTSEAT_QSB_OPACITY:
+                    case Utilities.KEY_HOTSEAT_QSB_STROKE_WIDTH:
+                        mNeedsRestart = true;
+                        break;
+                    default:
+                        break;
+                }
+            };
+
     public static Launcher getLauncher(Context context) {
         return fromContext(context);
     }
@@ -613,6 +636,8 @@ public class Launcher extends StatefulActivity<LauncherState>
                     RuleController.parseRules(this, R.xml.split_configuration));
         }
         TestEventEmitter.sendEvent(TestEvent.LAUNCHER_ON_CREATE);
+
+        mSharedPrefs.registerOnSharedPreferenceChangeListener(mSharedPrefListener);
     }
 
     protected ModelCallbacks createModelCallbacks() {
@@ -1115,6 +1140,11 @@ public class Launcher extends StatefulActivity<LauncherState>
 
         mAppWidgetHolder.setActivityStarted(true);
         TraceHelper.INSTANCE.endSection();
+
+        if (mNeedsRestart) {
+            Utilities.restart(this);
+            mNeedsRestart = false; // To prevent potential restart loops
+        }
     }
 
     @Override
@@ -1313,7 +1343,9 @@ public class Launcher extends StatefulActivity<LauncherState>
         DragView.removeAllViews(this);
         TraceHelper.INSTANCE.endSection();
 
-        LauncherAppState.INSTANCE.executeIfCreated(app -> app.checkIfRestartNeeded());
+        if (mNeedsRestart) {
+            Utilities.restart(this);
+        }
     }
 
     @Override
@@ -1816,6 +1848,8 @@ public class Launcher extends StatefulActivity<LauncherState>
         getRootView().getViewTreeObserver().removeOnPreDrawListener(mOnInitialBindListener);
         mOverlayManager.onActivityDestroyed();
         PillColorProvider.getInstance(mWorkspace.getContext()).unregisterObserver();
+
+        mSharedPrefs.unregisterOnSharedPreferenceChangeListener(mSharedPrefListener);
     }
 
     public LauncherAccessibilityDelegate getAccessibilityDelegate() {
