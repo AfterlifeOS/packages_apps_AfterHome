@@ -6,7 +6,7 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
 
     <!-- Application name -->
-    <string name="clover_app_name" translatable="false">Clover Launcher</string>
+    <string name="afterlifeos_app_name" translatable="false">AfterHome</string>
 
     <!-- Folder titles -->
     <string name="google_folder_title" translatable="false">Google</string>
