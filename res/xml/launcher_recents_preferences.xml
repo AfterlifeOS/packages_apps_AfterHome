@@ -29,7 +29,8 @@
             android:summary="@string/recents_chips_summary"
             android:defaultValue="true"
             android:persistent="true"
-            launcher:iconSpaceReserved="false" />
+            launcher:iconSpaceReserved="false" 
+            launcher:layout="@layout/afl_preference_top" />
 
         <SwitchPreferenceCompat
             android:key="pref_recents_screenshot"
@@ -38,7 +39,7 @@
             android:defaultValue="true"
             android:persistent="true"
             launcher:iconSpaceReserved="false" 
-            launcher:layout="@layout/afl_preference_top" />
+            launcher:layout="@layout/afl_preference_middle" />
 
         <SwitchPreferenceCompat
             android:key="pref_recents_clear_all"

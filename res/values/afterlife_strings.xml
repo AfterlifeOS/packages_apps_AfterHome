@@ -89,6 +89,7 @@
 
     <!-- App label -->
     <string name="icon_two_lines_title">Use two lines for app label</string>
+    <string name="icon_two_lines_summary">Allow app labels span two lines for better readability</string>
    
     <!-- Kill App recents action shortcut -->
     <string name="recent_task_option_kill_app">Kill</string>

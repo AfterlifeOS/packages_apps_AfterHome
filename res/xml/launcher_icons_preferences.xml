@@ -48,6 +48,7 @@
     <SwitchPreferenceCompat
         android:key="pref_enable_two_line_toggle"
         android:title="@string/icon_two_lines_title"
+        android:summary="@string/icon_two_lines_summary"
         android:defaultValue="false"
         android:persistent="true"
         launcher:iconSpaceReserved="false" 
