@@ -135,6 +135,7 @@ import android.graphics.RectF;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.os.Process;
 import android.os.StrictMode;
 import android.os.SystemClock;
 import android.os.Trace;
@@ -170,6 +171,8 @@ import androidx.annotation.UiThread;
 import androidx.annotation.VisibleForTesting;
 import androidx.core.os.BuildCompat;
 import androidx.window.embedding.RuleController;
+
+import com.android.internal.util.BoostHelper;
 
 import com.android.launcher3.DropTarget.DragObject;
 import com.android.launcher3.accessibility.LauncherAccessibilityDelegate;
@@ -1327,6 +1330,7 @@ public class Launcher extends StatefulActivity<LauncherState>
 
         DragView.removeAllViews(this);
         TraceHelper.INSTANCE.endSection();
+        BoostHelper.setThreadAffinity(Process.myPid(), 0);
     }
 
     @Override
@@ -1346,6 +1350,7 @@ public class Launcher extends StatefulActivity<LauncherState>
             mQuickSpace.onPause();
         }
         mAppWidgetHolder.setActivityResumed(false);
+        BoostHelper.setThreadAffinity(Process.myPid(), 1);
     }
 
     /**
