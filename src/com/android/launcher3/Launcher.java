@@ -1341,6 +1341,7 @@ public class Launcher extends StatefulActivity<LauncherState>
         DragView.removeAllViews(this);
         TraceHelper.INSTANCE.endSection();
         BoostHelper.setThreadAffinity(Process.myPid(), 0);
+        LauncherStatesHelper.setActivityResumed(true);
     }
 
     @Override
@@ -1361,6 +1362,7 @@ public class Launcher extends StatefulActivity<LauncherState>
         }
         mAppWidgetHolder.setActivityResumed(false);
         BoostHelper.setThreadAffinity(Process.myPid(), 1);
+        LauncherStatesHelper.setActivityResumed(false);
     }
 
     /**
