@@ -533,4 +533,9 @@
     <!-- All Apps Blur -->
     <string name="allapps_blur_title">All Apps blur</string>
     <string name="allapps_blur_summary">Blur content behind the all apps bottom sheet</string>
+
+    <!-- Dark App Drawer Text -->
+    <string name="all_apps_dark_text_title">Dark app labels</string>
+    <string name="all_apps_dark_text_summary">Always use dark text for app labels in the app drawer</string>
+
 </resources>
