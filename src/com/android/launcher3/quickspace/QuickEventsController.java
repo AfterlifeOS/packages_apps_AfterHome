@@ -39,7 +39,7 @@ import com.android.launcher3.util.MSMHProxy;
 
 public class QuickEventsController {
 
-    private final Context mContext;
+    private final Context mAppContext;
     private final Resources mResources;
 
     private String mEventTitle;
@@ -50,6 +50,7 @@ public class QuickEventsController {
     private Drawable mEventSubIcon = null;
 
     private boolean mIsQuickEvent = false;
+    private boolean mDestroyed = false;
 
     private final Map<Integer, String[]> mCachedPSAMap = new HashMap<>();
 
@@ -63,25 +64,29 @@ public class QuickEventsController {
     private boolean mPlayingActive = false;
 
     public QuickEventsController(Context context) {
-        mContext = context;
-        mResources = context.getResources();
+        mAppContext = context.getApplicationContext();
+        mResources = mAppContext.getResources();
     }
 
     public void initQuickEvents() {
+        if (mDestroyed) return;
         updateQuickEvents();
     }
 
     public void updateQuickEvents() {
+        if (mDestroyed) return;
         nowPlayingEvent();
         initNowPlayingEvent();
         psonalityEvent();
     }
 
     public void updatePsonality() {
+        if (mDestroyed) return;
         psonalityEvent();
     }
 
     private void nowPlayingEvent() {
+        if (mDestroyed) return;
         if (mEventNowPlaying && !mPlayingActive) {
             mIsQuickEvent = false;
             mEventNowPlaying = false;
@@ -89,7 +94,8 @@ public class QuickEventsController {
     }
 
     private void initNowPlayingEvent() {
-        if (!LauncherPrefs.SHOW_QUICKSPACE_NOWPLAYING.get(mContext)) return;
+        if (mDestroyed) return;
+        if (!LauncherPrefs.SHOW_QUICKSPACE_NOWPLAYING.get(mAppContext)) return;
 
         if (!mPlayingActive) return;
 
@@ -103,11 +109,15 @@ public class QuickEventsController {
         } else {
             mEventTitleSub = mNowPlayingArtist;
         }
-        mEventSubIcon = MSMHProxy.INSTANCE(mContext).getMediaAppIcon();
+        mEventSubIcon = MSMHProxy.INSTANCE(mAppContext).getMediaAppIcon();
         mIsQuickEvent = true;
         mEventNowPlaying = true;
 
-        mEventTitleSubAction = view -> MSMHProxy.INSTANCE(mContext).launchMediaApp();
+        mEventTitleSubAction = view -> {
+            if (!mDestroyed) {
+                MSMHProxy.INSTANCE(mAppContext).launchMediaApp();
+            }
+        };
     }
 
     private static String formatDateTime(Context context) {
@@ -124,9 +134,10 @@ public class QuickEventsController {
     }
 
     private void psonalityEvent() {
+        if (mDestroyed) return;
         if (mEventNowPlaying) return;
 
-	    mEventTitle = formatDateTime(mContext);
+	    mEventTitle = formatDateTime(mAppContext);
         mEventTitleSubAction = QuickSpaceActionReceiver.getCalendarAction();
 
         int hourOfDay = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
@@ -151,7 +162,7 @@ public class QuickEventsController {
             mClockExt = mResources.getString(R.string.quickspace_ext_two);
         }
 
-        if (!LauncherPrefs.SHOW_QUICKSPACE_PSONALITY.get(mContext)) {
+        if (!LauncherPrefs.SHOW_QUICKSPACE_PSONALITY.get(mAppContext)) {
             mIsQuickEvent = false;
             return;
         }
@@ -165,7 +176,7 @@ public class QuickEventsController {
         } else if (luckNumber == 7) {
             mPSAStr = mResources.getStringArray(R.array.quickspace_psa_random);
             mEventTitleSub = mPSAStr[getLuckyNumber(0, mPSAStr.length - 1)];
-            mEventSubIcon = ContextCompat.getDrawable(mContext, R.drawable.ic_quickspace_afterlife);
+            mEventSubIcon = ContextCompat.getDrawable(mAppContext, R.drawable.ic_quickspace_afterlife);
             mIsQuickEvent = true;
             return;
         }
@@ -197,31 +208,31 @@ public class QuickEventsController {
     }
 
     public boolean isQuickEvent() {
-        return mIsQuickEvent;
+        return mIsQuickEvent && !mDestroyed;
     }
 
     public String getTitle() {
-        return mEventTitle;
+        return mDestroyed ? "" : mEventTitle;
     }
 
     public String getActionTitle() {
-        return mEventTitleSub;
+        return mDestroyed ? "" : mEventTitleSub;
     }
 
     public String getClockExt() {
-        return mClockExt;
+        return mDestroyed ? "" : mClockExt;
     }
 
     public String getGreetings() {
-        return mGreetings;
+        return mDestroyed ? "" : mGreetings;
     }
 
     public OnClickListener getAction() {
-        return mEventTitleSubAction;
+        return mDestroyed ? null : mEventTitleSubAction;
     }
 
     public Drawable getActionIcon() {
-        return mEventSubIcon;
+        return mDestroyed ? null : mEventSubIcon;
     }
 
     public int getLuckyNumber(int max) {
@@ -229,23 +240,41 @@ public class QuickEventsController {
     }
 
     public int getLuckyNumber(int min, int max) {
+        if (max < min) return min;
         return ThreadLocalRandom.current().nextInt(min, max + 1);
     }
 
     public void setMediaInfo(String title, String artist, boolean activePlayback) {
+        if (mDestroyed) return;
         mNowPlayingTitle = title;
         mNowPlayingArtist = artist;
         mPlayingActive = activePlayback;
     }
 
     public boolean isNowPlaying() {
-        return mPlayingActive;
+        return !mDestroyed && mPlayingActive;
     }
 
     private String[] getCachedArray(int resId) {
+        if (mDestroyed) return null;
         if (!mCachedPSAMap.containsKey(resId)) {
             mCachedPSAMap.put(resId, mResources.getStringArray(resId));
         }
         return mCachedPSAMap.get(resId);
+    }
+
+    public void destroy() {
+        if (mDestroyed) return;
+        mDestroyed = true;
+        mEventTitleSubAction = null;
+        mEventSubIcon = null;
+        mEventTitle = null;
+        mEventTitleSub = null;
+        mGreetings = null;
+        mClockExt = null;
+        mPSAStr = null;
+        mNowPlayingTitle = null;
+        mNowPlayingArtist = null;
+        mCachedPSAMap.clear();
     }
 }
