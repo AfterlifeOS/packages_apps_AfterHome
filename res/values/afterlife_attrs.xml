@@ -37,4 +37,9 @@
     <attr name="qsbIconTintQuaternary" format="color" />
     <attr name="qsbIconTintSecondary" format="color" />
     <attr name="qsbIconTintTertiary" format="color" />
+
+    <!-- Custom shape drawable -->
+    <declare-styleable name="CustomShapeDrawable">
+        <attr name="radius" format="dimension" />
+    </declare-styleable>
 </resources>

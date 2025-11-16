@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2025 AfterlifeOS Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<LinearLayout
+    android:orientation="vertical"
+    android:background="@drawable/card_single"
+    android:paddingTop="16.0dip"
+    android:paddingBottom="16.0dip"
+    android:focusable="false"
+    android:clickable="false"
+    android:gravity="center_vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="20dp"
+    android:layout_marginVertical="10dp"
+    android:clipToPadding="false"
+    android:minHeight="?android:attr/listPreferredItemHeightSmall"
+    android:paddingStart="16.0dip"
+    android:paddingEnd="16.0dip"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:paddingTop="16dp"
+        android:paddingBottom="16dp">
+
+        <TextView
+            android:id="@android:id/title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:textAppearance="?android:attr/textAppearanceListItem"
+            android:ellipsize="marquee" />
+
+        <TextView
+            android:id="@android:id/summary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@android:id/title"
+            android:layout_alignStart="@android:id/title"
+            android:textAppearance="?android:attr/textAppearanceListItemSecondary"
+            android:textColor="?android:attr/textColorSecondary"
+            android:maxLines="10"
+            android:ellipsize="end" />
+
+        <RelativeLayout
+            android:id="@id/label_frame"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="2dp"
+            android:layout_below="@android:id/summary"
+            android:layout_alignStart="@android:id/title">
+
+            <TextView
+                android:textAppearance="?android:textAppearanceListItemSecondary"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:id="@android:id/text1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1" />
+
+            <TextView
+                android:textAppearance="?android:textAppearanceListItemSecondary"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:id="@android:id/text2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1" />
+
+        </RelativeLayout>
+        <RelativeLayout
+            android:gravity="center_vertical"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/label_frame"
+            android:layout_alignStart="@android:id/title">
+
+            <FrameLayout
+                android:id="@id/icon_start_frame"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true">
+            
+                <ImageView
+                    android:layout_gravity="center"
+                    android:id="@id/icon_start"
+                    android:background="?android:selectableItemBackgroundBorderless"
+                    android:layout_width="24.0dip"
+                    android:layout_height="24.0dip" />
+
+            </FrameLayout>
+
+            <com.google.android.material.slider.Slider
+                android:theme="@style/Theme.MaterialComponents"
+                android:id="@id/slider"
+                android:layout_width="0.0dip"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.0"
+                android:layout_toEndOf="@id/icon_start_frame"
+                android:layout_toStartOf="@id/icon_end_frame"
+                android:layout_centerVertical="true" />
+
+            <FrameLayout
+                android:id="@id/icon_end_frame"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true">
+
+                <ImageView
+                    android:layout_gravity="center"
+                    android:id="@id/icon_end"
+                    android:background="?android:selectableItemBackgroundBorderless"
+                    android:layout_width="24.0dip"
+                    android:layout_height="24.0dip" />
+
+            </FrameLayout>
+
+        </RelativeLayout>
+    </RelativeLayout>
+</LinearLayout>

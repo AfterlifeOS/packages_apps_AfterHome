@@ -7,7 +7,7 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item>
-        <com.android.settingslib.widget.AdaptiveIconShapeDrawable
+        <com.android.launcher3.settings.widget.CustomShapeDrawable
             android:width="@dimen/dashboard_tile_image_size"
             android:height="@dimen/dashboard_tile_image_size"
             android:color="@color/homepage_yellow_bg" />

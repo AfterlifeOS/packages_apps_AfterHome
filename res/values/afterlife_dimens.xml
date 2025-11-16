@@ -17,8 +17,8 @@
 <resources>
 
     <!-- Material Expressive -->
-    <dimen name="dashboard_tile_image_size">40dp</dimen>
-    <dimen name="dashboard_tile_foreground_image_size">24dp</dimen>
+    <dimen name="dashboard_tile_image_size">48dp</dimen>
+    <dimen name="dashboard_tile_foreground_image_size">32dp</dimen>
     <dimen name="dashboard_tile_foreground_image_inset">8dp</dimen>
     <dimen name="preference_icon_foreground_image_inset">12dp</dimen>
 

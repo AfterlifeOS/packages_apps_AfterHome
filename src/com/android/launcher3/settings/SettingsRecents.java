@@ -34,6 +34,7 @@ import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.preference.Preference;
+import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceFragmentCompat.OnPreferenceStartFragmentCallback;
 import androidx.preference.PreferenceFragmentCompat.OnPreferenceStartScreenCallback;
@@ -51,8 +52,13 @@ import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.util.SettingsCache;
 
+import com.android.launcher3.settings.preferences.CustomSeekBarPreference;
+
 import com.android.settingslib.collapsingtoolbar.CollapsingToolbarBaseActivity;
 import com.android.settingslib.widget.SettingsBasePreferenceFragment;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Settings activity for Launcher.
@@ -206,6 +212,8 @@ public class SettingsRecents extends CollapsingToolbarBaseActivity
                 }
             }
 
+            updatePreferenceLayouts();
+
             if (getActivity() != null && !TextUtils.isEmpty(getPreferenceScreen().getTitle())) {
                 getActivity().setTitle(getPreferenceScreen().getTitle());
             }
@@ -290,6 +298,76 @@ public class SettingsRecents extends CollapsingToolbarBaseActivity
         public void onSettingsChanged(boolean isEnabled) {
             // Developer options changed, try recreate
             tryRecreateActivity();
+        }
+
+        private void updatePreferenceLayouts() {
+            PreferenceScreen screen = getPreferenceScreen();
+            List<Preference> rootChunk = new ArrayList<>();
+            if (screen == null) {
+                return;
+            }
+
+            for (int i = 0; i < screen.getPreferenceCount(); i++) {
+                Preference pref = screen.getPreference(i);
+            
+                if (!pref.isVisible()) continue;
+
+                if (pref instanceof PreferenceCategory) {
+                    processPreferenceChunk(rootChunk);
+                    rootChunk.clear();
+
+                    PreferenceCategory category = (PreferenceCategory) pref;
+                    List<Preference> categoryChunk = new ArrayList<>();
+
+                    for (int j = 0; j < category.getPreferenceCount(); j++) {
+                        Preference child = category.getPreference(j);
+
+                        if (!child.isVisible()) {
+                            continue;
+                        }
+
+                        if (child instanceof CustomSeekBarPreference) {
+                            processPreferenceChunk(categoryChunk);
+                            categoryChunk.clear();
+                            child.setLayoutResource(R.layout.custom_seekbar_layout);
+                        
+                        } else if (!(child instanceof PreferenceCategory)) {
+                            categoryChunk.add(child);
+                        }
+                    }
+                    processPreferenceChunk(categoryChunk);
+                    continue;
+                }
+
+                if (pref instanceof CustomSeekBarPreference) {
+                    processPreferenceChunk(rootChunk);
+                    rootChunk.clear();
+                    pref.setLayoutResource(R.layout.custom_seekbar_layout);
+                    continue;
+                }
+
+                rootChunk.add(pref);
+            }
+
+            processPreferenceChunk(rootChunk);
+        }
+
+        private void processPreferenceChunk(List<Preference> chunk) {
+            int chunkSize = chunk.size();
+
+            if (chunkSize == 0) {
+                return;
+            }
+
+            if (chunkSize == 1) {
+                chunk.get(0).setLayoutResource(R.layout.afl_preference_single);
+            } else {
+                chunk.get(0).setLayoutResource(R.layout.afl_preference_top);
+                for (int i = 1; i < chunkSize - 1; i++) {
+                    chunk.get(i).setLayoutResource(R.layout.afl_preference_middle);
+                }
+                chunk.get(chunkSize - 1).setLayoutResource(R.layout.afl_preference_bottom);
+            }
         }
 
         /**

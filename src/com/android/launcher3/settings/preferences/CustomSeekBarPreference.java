@@ -18,6 +18,7 @@ package com.android.launcher3.settings.preferences;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.drawable.Drawable;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.MotionEvent;
@@ -59,6 +60,9 @@ public class CustomSeekBarPreference extends SliderPreference {
     public CustomSeekBarPreference(Context context, AttributeSet attrs) {
         super(context, attrs);
         readLegacyAttrs(context, attrs);
+
+        setLayoutResource(R.layout.custom_seekbar_layout);
+
         initDefaults();
         mUserSummary = super.getSummary();
         updateSummaryNow();
@@ -66,6 +70,9 @@ public class CustomSeekBarPreference extends SliderPreference {
 
     public CustomSeekBarPreference(Context context) {
         super(context, null);
+
+        setLayoutResource(R.layout.custom_seekbar_layout);
+
         initDefaults();
         mUserSummary = super.getSummary();
         updateSummaryNow();
@@ -181,15 +188,28 @@ public class CustomSeekBarPreference extends SliderPreference {
 
     @Override
     public void onBindViewHolder(@NonNull PreferenceViewHolder holder) {
-        super.onBindViewHolder(holder);
+        final TextView titleView = (TextView) holder.findViewById(android.R.id.title);
+        if (titleView != null) {
+            final CharSequence title = getTitle();
+            if (!TextUtils.isEmpty(title)) {
+                titleView.setText(title);
+                titleView.setVisibility(View.VISIBLE);
+            } else {
+                titleView.setVisibility(View.GONE);
+            }
+        }
 
         final TextView summaryView = (TextView) holder.findViewById(android.R.id.summary);
         if (summaryView != null) {
-            summaryView.setText(composeSummary(mUserSummary, getValue()));
+            final CharSequence summary = composeSummary(mUserSummary, getValue()); 
+            if (!TextUtils.isEmpty(summary)) {
+                summaryView.setText(summary);
+                summaryView.setVisibility(View.VISIBLE);
+            } else {
+                summaryView.setVisibility(View.GONE);
+            }
         }
-
-        final View labelFrame = holder.findViewById(
-                com.android.settingslib.widget.preference.slider.R.id.label_frame);
+        final View labelFrame = holder.findViewById(R.id.label_frame);
         final TextView startText = (TextView) holder.findViewById(android.R.id.text1);
         final TextView endText = (TextView) holder.findViewById(android.R.id.text2);
 
@@ -199,7 +219,6 @@ public class CustomSeekBarPreference extends SliderPreference {
             boolean hasEnd = endText != null && endText.getText() != null
                     && endText.getText().length() > 0;
             boolean parentWantsLabels = hasStart || hasEnd;
-
             labelFrame.setVisibility((parentWantsLabels || mDefaultValueExists) ? View.VISIBLE : View.GONE);
         }
 
@@ -207,18 +226,21 @@ public class CustomSeekBarPreference extends SliderPreference {
             attachResetIcon(endText);
         }
 
-        ViewGroup minusFrame = (ViewGroup) holder.findViewById(
-                com.android.settingslib.widget.preference.slider.R.id.icon_start_frame);
-        ImageView minusIcon = (ImageView) holder.findViewById(
-                com.android.settingslib.widget.preference.slider.R.id.icon_start);
+        ViewGroup minusFrame = (ViewGroup) holder.findViewById(R.id.icon_start_frame);
+        ImageView minusIcon = (ImageView) holder.findViewById(R.id.icon_start);
 
-        ViewGroup plusFrame = (ViewGroup) holder.findViewById(
-                com.android.settingslib.widget.preference.slider.R.id.icon_end_frame);
-        ImageView plusIcon = (ImageView) holder.findViewById(
-                com.android.settingslib.widget.preference.slider.R.id.icon_end);
+        ViewGroup plusFrame = (ViewGroup) holder.findViewById(R.id.icon_end_frame);
+        ImageView plusIcon = (ImageView) holder.findViewById(R.id.icon_end);
 
-        final Slider slider = (Slider) holder.findViewById(
-                com.android.settingslib.widget.preference.slider.R.id.slider);
+        final Slider slider = (Slider) holder.findViewById(R.id.slider);
+
+        if (slider != null) {
+            slider.setValueFrom(getMin());
+            slider.setValueTo(getMax());
+            slider.setStepSize(getSliderIncrement());
+            slider.setValue(getValue());
+            slider.setEnabled(isEnabled());
+        }
 
         int stepForClicks = Math.max(1, getSliderIncrement());
 
@@ -299,14 +321,10 @@ public class CustomSeekBarPreference extends SliderPreference {
     }
 
     private void updatePlusMinusEnabledStates(PreferenceViewHolder holder) {
-        View minusFrame = holder.findViewById(
-                com.android.settingslib.widget.preference.slider.R.id.icon_start_frame);
-        ImageView minusIcon = (ImageView) holder.findViewById(
-                com.android.settingslib.widget.preference.slider.R.id.icon_start);
-        View plusFrame = holder.findViewById(
-                com.android.settingslib.widget.preference.slider.R.id.icon_end_frame);
-        ImageView plusIcon = (ImageView) holder.findViewById(
-                com.android.settingslib.widget.preference.slider.R.id.icon_end);
+        View minusFrame = holder.findViewById(R.id.icon_start_frame);
+        ImageView minusIcon = (ImageView) holder.findViewById(R.id.icon_start);
+        View plusFrame = holder.findViewById(R.id.icon_end_frame);
+        ImageView plusIcon = (ImageView) holder.findViewById(R.id.icon_end);
         boolean enabled = isEnabled();
         int value = getValue();
 
