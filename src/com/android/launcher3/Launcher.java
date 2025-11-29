@@ -233,7 +233,6 @@ import com.android.launcher3.testing.shared.TestProtocol;
 import com.android.launcher3.touch.AllAppsSwipeController;
 import com.android.launcher3.touch.ItemClickHandler;
 import com.android.launcher3.touch.ItemLongClickListener;
-import com.android.launcher3.util.AxCpuBindController;
 import com.android.launcher3.util.ActivityResultInfo;
 import com.android.launcher3.util.BackPressHandler;
 import com.android.launcher3.util.CannedAnimationCoordinator;
@@ -2871,7 +2870,6 @@ public class Launcher extends StatefulActivity<LauncherState>
 
     /** Pauses view updates that should not be run during the app launch animation. */
     public void pauseExpensiveViewUpdates() {
-        AxCpuBindController.get().acquireAppOpenBoost();
         // Pause page indicator animations as they lead to layer trashing.
         getWorkspace().getPageIndicator().pauseAnimations();
 
@@ -2893,7 +2891,6 @@ public class Launcher extends StatefulActivity<LauncherState>
             }
             return false; // Return false to continue iterating through all the items.
         });
-        AxCpuBindController.get().releaseAppOpenBoost();
     }
 
     /**

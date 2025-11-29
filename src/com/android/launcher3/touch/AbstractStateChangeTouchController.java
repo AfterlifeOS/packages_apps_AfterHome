@@ -45,7 +45,6 @@ import com.android.launcher3.anim.AnimatorPlaybackController;
 import com.android.launcher3.logger.LauncherAtom;
 import com.android.launcher3.logging.StatsLogManager;
 import com.android.launcher3.states.StateAnimationConfig;
-import com.android.launcher3.util.AxCpuBindController;
 import com.android.launcher3.util.FlingBlockCheck;
 import com.android.launcher3.util.TouchController;
 
@@ -192,7 +191,6 @@ public abstract class AbstractStateChangeTouchController
     public void onDragStart(boolean start, float startDisplacement) {
         mStartState = mLauncher.getStateManager().getState();
         mIsLogContainerSet = false;
-        AxCpuBindController.get().acquireDragBoost();
 
         if (mCurrentAnimation == null) {
             mFromState = mStartState;
@@ -284,7 +282,6 @@ public abstract class AbstractStateChangeTouchController
 
     @Override
     public void onDragEnd(float velocity) {
-        AxCpuBindController.get().releaseDragBoost();
         if (mCurrentAnimation == null) {
             // Unlikely, but we may have been canceled just before onDragEnd(). We assume whoever
             // canceled us will handle a new state transition to clean up.
