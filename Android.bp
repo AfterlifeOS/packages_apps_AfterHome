@@ -428,7 +428,7 @@ android_library {
 // Build rule for Launcher3 app.
 //
 android_app {
-    name: "Launcher3",
+    name: "AfterHome",
     defaults: ["launcher-non-platform-apis-defaults"],
 
     static_libs: [
@@ -584,7 +584,7 @@ android_library {
 
 // Build rule for Quickstep app.
 android_app {
-    name: "Launcher3QuickStep",
+    name: "AfterHomeQuickStep",
     static_libs: ["Launcher3QuickStepLib"],
     optimize: {
         proguard_flags_files: [":launcher-proguard-rules"],
@@ -602,7 +602,7 @@ android_app {
     overrides: [
         "Home",
         "Launcher2",
-        "Launcher3",
+        "AfterHome",
         "QuickSearchBox",
     ],
     required: [
@@ -629,7 +629,7 @@ android_app {
 // Note that the following two rules are exactly same, and should
 // eventually be merged into a single target
 android_app {
-    name: "Launcher3Go",
+    name: "AfterHomeGo",
     static_libs: ["Launcher3GoLib"],
     resource_dirs: [],
 
@@ -649,8 +649,8 @@ android_app {
     overrides: [
         "Home",
         "Launcher2",
-        "Launcher3",
-        "Launcher3QuickStep",
+        "AfterHome",
+        "AfterHomeQuickStep",
         "QuickSearchBox",
     ],
     required: [
@@ -671,7 +671,7 @@ android_app {
 }
 
 android_app {
-    name: "Launcher3QuickStepGo",
+    name: "AfterHomeQuickStepGo",
     static_libs: ["Launcher3GoLib"],
     resource_dirs: [],
 
@@ -691,8 +691,8 @@ android_app {
     overrides: [
         "Home",
         "Launcher2",
-        "Launcher3",
-        "Launcher3QuickStep",
+        "AfterHome",
+        "AfterHomeQuickStep",
         "QuickSearchBox",
     ],
     required: [

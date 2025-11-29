@@ -15,6 +15,9 @@
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
 
+    <!-- Application name -->
+    <string name="afterlifeos_app_name" translatable="false">AfterHome</string>
+
     <!-- Folder titles -->
     <string name="google_folder_title" translatable="false">Google</string>
 
