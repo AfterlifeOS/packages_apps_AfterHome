@@ -128,7 +128,6 @@ public class TaskOverlayFactory implements ResourceBasedOverride {
             TaskShortcutFactory.SCREENSHOT,
             TaskShortcutFactory.MODAL,
             TaskShortcutFactory.CLOSE,
-            TaskShortcutFactory.STORAGE_SCOPES,
     };
 
     /**
