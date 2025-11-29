@@ -49,6 +49,7 @@ class AxCpuBindController private constructor() {
     private fun animationBoostOn(type: Int) {
         animationBoostType = animationBoostType or type
         if (animationBoost != ANIMATION_BOOST_ON) {
+            BoostHelper.setPerformanceMode(true, "launcher")
             bindBigCore()
             animationBoost = ANIMATION_BOOST_ON
             BoostHelper.animationBoost(Process.myPid(), true)
@@ -61,6 +62,7 @@ class AxCpuBindController private constructor() {
             unbind()
             animationBoost = ANIMATION_BOOST_OFF
             BoostHelper.animationBoost(Process.myPid(), false)
+            BoostHelper.setPerformanceMode(false, "launcher")
         }
     }
 
