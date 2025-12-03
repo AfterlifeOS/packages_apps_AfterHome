@@ -651,6 +651,16 @@ public class QuickstepLauncher extends Launcher implements RecentsViewContainer,
     }
 
     @Override
+    public void onStateSetStart(LauncherState state) {
+        super.onStateSetStart(state);
+        if (state == OVERVIEW) {
+            RecentsView recentsView = getOverviewPanel();
+            recentsView.getPagedOrientationHandler(); // Ensure handler is initialized
+            recentsView.getPagedViewOrientedState().ignoreAllowHomeRotationPreference();
+        }
+    }
+
+    @Override
     public void onStateSetEnd(LauncherState state) {
         super.onStateSetEnd(state);
         handlePendingActivityRequest();

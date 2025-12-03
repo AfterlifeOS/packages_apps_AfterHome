@@ -463,6 +463,20 @@ constructor(
             applyTranslationX()
         }
 
+    // iOS Curve Translations
+    private var curveTransX = 0f
+    private var curveTransY = 0f
+
+    fun setCurveTranslationX(x: Float) {
+        curveTransX = x
+        applyTranslationX()
+    }
+
+    fun setCurveTranslationY(y: Float) {
+        curveTransY = y
+        applyTranslationY()
+    }
+
     private val taskViewAlpha = MultiValueAlpha(this, Alpha.entries.size)
     protected var stableAlpha by MultiPropertyDelegate(taskViewAlpha, Alpha.Stable)
     var attachAlpha by MultiPropertyDelegate(taskViewAlpha, Alpha.Attach)
@@ -1781,7 +1795,8 @@ constructor(
                 taskResistanceTranslationX +
                 splitSelectTranslationX +
                 gridEndTranslationX +
-                persistentTranslationX
+                persistentTranslationX +
+                curveTransX
     }
 
     private fun applyTranslationY() {
@@ -1790,7 +1805,8 @@ constructor(
                 taskOffsetTranslationY +
                 taskResistanceTranslationY +
                 splitSelectTranslationY +
-                persistentTranslationY
+                persistentTranslationY +
+                curveTransY
     }
 
     private fun onGridProgressChanged() {
@@ -1862,6 +1878,8 @@ constructor(
         dismissTranslationY = 0f
         taskOffsetTranslationY = 0f
         taskResistanceTranslationY = 0f
+        curveTransX = 0f
+        curveTransY = 0f
         if (recentsView?.isSplitSelectionActive != true) {
             splitSelectTranslationY = 0f
         }

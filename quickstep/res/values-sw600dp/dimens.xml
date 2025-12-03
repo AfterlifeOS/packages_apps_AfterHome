@@ -24,13 +24,13 @@
     <!--  The icon size for the focused task, placed in center of touch target  -->
     <dimen name="task_thumbnail_icon_drawable_size">44dp</dimen>
     <!--  The space under the focused task icon  -->
-    <dimen name="overview_task_margin">12dp</dimen>
+    <dimen name="overview_task_margin">8dp</dimen>
     <!--  The icon size of all non-focused task icons, placed in center of touch target  -->
     <dimen name="task_thumbnail_icon_drawable_size_grid">44dp</dimen>
     <!--  The space between grid rows (when there's 2 rows of thumbnails)  -->
     <dimen name="overview_grid_row_spacing">28dp</dimen>
     <!--  The horizontal space between tasks  -->
-    <dimen name="overview_page_spacing">36dp</dimen>
+    <dimen name="overview_page_spacing">16dp</dimen>
     <!--  The space to the left and to the right of the "Clear all" button  -->
     <dimen name="overview_grid_side_margin">64dp</dimen>
     <!--  Overview actions  -->

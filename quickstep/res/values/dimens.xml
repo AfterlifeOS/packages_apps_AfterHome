@@ -16,9 +16,9 @@
 
 <resources>
     <!-- For screens without rounded corners -->
-    <dimen name="task_corner_radius_small">16dp</dimen>
+    <dimen name="task_corner_radius_small">28dp</dimen>
     <!-- For Launchers that want to override the default dialog corner radius -->
-    <dimen name="task_corner_radius_override">-1dp</dimen>
+    <dimen name="task_corner_radius_override">28dp</dimen>
 
     <!--  Task Menu View  -->
     <dimen name="task_menu_corner_radius">22dp</dimen>
@@ -43,9 +43,9 @@
     <!--  The border width shown when task is hovered  -->
     <dimen name="task_hover_border_width">4dp</dimen>
     <!--  The space under the focused task icon  -->
-    <dimen name="overview_task_margin">16dp</dimen>
+    <dimen name="overview_task_margin">8dp</dimen>
     <!--  The horizontal space between tasks  -->
-    <dimen name="overview_page_spacing">16dp</dimen>
+    <dimen name="overview_page_spacing">8dp</dimen>
     <!--  The collapsed max width of the icon menu text  -->
     <dimen name="task_thumbnail_icon_menu_text_collapsed_max_width">86dp</dimen>
     <!--  The expanded max width of the icon menu text  -->
@@ -86,7 +86,7 @@
     <dimen name="task_thumbnail_header_margin_edge">18dp</dimen>
     <dimen name="task_thumbnail_header_margin_between_views">9dp</dimen>
     <dimen name="task_thumbnail_header_icon_size">18dp</dimen>
-    <dimen name="task_thumbnail_header_round_corner_radius">16dp</dimen>
+    <dimen name="task_thumbnail_header_round_corner_radius">28dp</dimen>
 
     <!--  How much a task being dragged for dismissal can undershoot the origin when dragged back to its start position.  -->
     <dimen name="task_dismiss_max_undershoot">25dp</dimen>

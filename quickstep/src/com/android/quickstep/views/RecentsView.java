@@ -215,6 +215,7 @@ import com.android.quickstep.util.ActiveGestureProtoLogProxy;
 import com.android.quickstep.util.AnimUtils;
 import com.android.quickstep.util.DesktopTask;
 import com.android.quickstep.util.GroupTask;
+import com.android.quickstep.util.IosRecentsMath;
 import com.android.quickstep.util.LayoutUtils;
 import com.android.quickstep.util.RecentsAtomicAnimationFactory;
 import com.android.quickstep.util.RecentsOrientedState;
@@ -2547,6 +2548,68 @@ public abstract class RecentsView<
 
         // Clear all button alpha was set by the previous line.
         mActionsView.getIndexScrollAlpha().updateValue(1 - mClearAllButton.getScrollAlpha());
+
+        // iOS/MIUI-style Stack Layout Implementation
+        if (!showAsGrid()) {
+            IosRecentsMath math = IosRecentsMath.getInstance();
+            int halfScreen = getMeasuredWidth() / 2;
+            int taskWidth = getLastComputedTaskSize().width();
+
+            for (int i = 0; i < getTaskViewCount(); i++) {
+                View child = getChildAt(i);
+                if (child instanceof TaskView) {
+                    TaskView taskView = (TaskView) child;
+                    
+                    // Correctly calculate distance using Layout Position vs Scroll Position
+                    int childCenter = child.getLeft() + child.getMeasuredWidth() / 2;
+                    int screenCenter = scroll + getMeasuredWidth() / 2;
+                    float dist = childCenter - screenCenter;
+
+                    // Map dist to f2 (spline parameter)
+                    // Center (dist=0) -> f2=3.0
+                    float f2 = 3.0f + (dist / (float) taskWidth);
+
+                    // Calculate raw spline values
+                    float rawScale = (float) math.getValue(IosRecentsMath.SPLINE_SCALE, f2);
+                    float rawAlpha = (float) math.getValue(IosRecentsMath.SPLINE_ALPHA, f2);
+                    float rawX = (float) math.getValue(IosRecentsMath.SPLINE_X_COORD, f2);
+                    float rawY = (float) math.getValue(IosRecentsMath.SPLINE_Y_COORD, f2);
+                    float rotationY = (float) math.getValue(IosRecentsMath.SPLINE_ROTATION_Y, f2);
+
+                    // Get anchor values at center (f2=3.0) to normalize
+                    float centerScale = (float) math.getValue(IosRecentsMath.SPLINE_SCALE, 3.0f);
+                    float centerY = (float) math.getValue(IosRecentsMath.SPLINE_Y_COORD, 3.0f);
+                    float centerX = (float) math.getValue(IosRecentsMath.SPLINE_X_COORD, 3.0f);
+
+                    // Normalize Scale: Center should be 1.0f
+                    float scale = rawScale / centerScale;
+
+                    // Determine Visual Dimensions (Short vs Long axis) to match MIUI logic
+                    // Spline X is scaled by the Short Axis (Stack bunching)
+                    // Spline Y is scaled by the Long Axis (Vertical offset)
+                    boolean isLandscape = getMeasuredWidth() > getMeasuredHeight();
+                    float visualWidth = isLandscape ? getMeasuredHeight() : getMeasuredWidth(); // Short Axis
+                    float visualHeight = isLandscape ? getMeasuredWidth() : getMeasuredHeight(); // Long Axis
+
+                    // Normalize X & Y: Center should be 0 translation
+                    float translationY = (rawY - centerY) * visualHeight;
+                    float targetVisualOffsetX = (rawX - centerX) * visualWidth;
+                    
+                    taskView.setScaleX(scale);
+                    taskView.setScaleY(scale);
+                    taskView.setAlpha(rawAlpha);
+                    taskView.setRotationY(rotationY);
+                    
+                    // Override linear layout with spline layout
+                    taskView.setCurveTranslationX(targetVisualOffsetX - dist);
+                    taskView.setCurveTranslationY(translationY);
+                    
+                    // Ensure correct stacking order (tasks to the right are ON TOP)
+                    // Higher index = Rightmost = Newest = Top
+                    taskView.setTranslationZ(-i);
+                }
+            }
+        }
     }
 
     @Override
