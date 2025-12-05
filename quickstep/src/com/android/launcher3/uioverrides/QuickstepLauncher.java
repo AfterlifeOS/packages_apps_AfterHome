@@ -657,6 +657,8 @@ public class QuickstepLauncher extends Launcher implements RecentsViewContainer,
             RecentsView recentsView = getOverviewPanel();
             recentsView.getPagedOrientationHandler(); // Ensure handler is initialized
             recentsView.getPagedViewOrientedState().ignoreAllowHomeRotationPreference();
+            int rotation = getDisplay().getRotation();
+            recentsView.setLayoutRotation(rotation, rotation);
         }
     }
 

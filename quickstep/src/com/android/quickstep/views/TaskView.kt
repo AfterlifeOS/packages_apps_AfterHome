@@ -472,9 +472,17 @@ constructor(
         applyTranslationX()
     }
 
+    fun getCurveTranslationX(): Float {
+        return curveTransX
+    }
+
     fun setCurveTranslationY(y: Float) {
         curveTransY = y
         applyTranslationY()
+    }
+
+    fun getCurveTranslationY(): Float {
+        return curveTransY
     }
 
     private val taskViewAlpha = MultiValueAlpha(this, Alpha.entries.size)
