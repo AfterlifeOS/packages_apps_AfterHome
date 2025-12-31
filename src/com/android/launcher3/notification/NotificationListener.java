@@ -34,6 +34,7 @@ import android.util.ArraySet;
 import android.util.Log;
 import android.util.Pair;
 
+import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
@@ -81,7 +82,10 @@ public class NotificationListener extends NotificationListenerService {
 
     private SettingsCache mSettingsCache;
     private SettingsCache.OnChangeListener mNotificationSettingsChangedListener;
-
+    
+    /**
+     * Service lifecycle
+     */
     public NotificationListener() {
         mWorkerHandler = new Handler(MODEL_EXECUTOR.getLooper(), this::handleWorkerMessage);
         mUiHandler = new Handler(Looper.getMainLooper(), this::handleUiMessage);
@@ -215,7 +219,8 @@ public class NotificationListener extends NotificationListenerService {
         }
         return result == null ? new StatusBarNotification[0] : result;
     }
-
+    
+    @CallSuper
     @Override
     public void onListenerConnected() {
         super.onListenerConnected();
@@ -241,14 +246,45 @@ public class NotificationListener extends NotificationListenerService {
     private void onNotificationFullRefresh() {
         mWorkerHandler.obtainMessage(MSG_NOTIFICATION_FULL_REFRESH).sendToTarget();
     }
-
+    
+    @CallSuper
     @Override
     public void onListenerDisconnected() {
         super.onListenerDisconnected();
         Log.i(TAG, "onListenerDisconnected");
         sIsConnected = false;
         mSettingsCache.unregister(NOTIFICATION_BADGING_URI, mNotificationSettingsChangedListener);
+        if (mSettingsCache != null && mNotificationSettingsChangedListener != null) {
+            mSettingsCache.unregister(NOTIFICATION_BADGING_URI, mNotificationSettingsChangedListener);
+        }
         onNotificationFullRefresh();
+    }
+    
+    @Override
+    public void onDestroy() {
+        Log.i(TAG, "onDestroy");
+        sIsConnected = false;
+
+        if (sNotificationListenerInstance == this) {
+            sNotificationListenerInstance = null;
+        }
+
+        if (mSettingsCache != null && mNotificationSettingsChangedListener != null) {
+            try {
+                mSettingsCache.unregister(
+                        NOTIFICATION_BADGING_URI, mNotificationSettingsChangedListener);
+            } catch (IllegalStateException e) {
+                
+            }
+        }
+        mSettingsCache = null;
+        mNotificationSettingsChangedListener = null;
+
+        mNotificationGroupMap.clear();
+        mNotificationGroupKeyMap.clear();
+        mWorkerHandler.removeCallbacksAndMessages(null);
+        mUiHandler.removeCallbacksAndMessages(null);
+        super.onDestroy();
     }
 
     @Override
