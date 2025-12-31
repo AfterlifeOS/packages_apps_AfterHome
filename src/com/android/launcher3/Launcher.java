@@ -1101,73 +1101,120 @@ public class Launcher extends StatefulActivity<LauncherState>
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
-        if (mDeferOverlayCallbacks) {
-            checkIfOverlayStillDeferred();
-        } else {
-            mOverlayManager.onActivityStopped();
-        }
-        if (mQuickSpace != null) {
-            mQuickSpace.onPause();
-        }
-        hideKeyboard();
-        logStopAndResume(false /* isResume */);
-        mAppWidgetHolder.setActivityStarted(false);
-        NotificationListener.removeNotificationsChangedListener(getPopupDataProvider());
-        FloatingIconView.resetIconLoadResult();
-        AccessibilityManagerCompat.sendTestProtocolEventToTest(
-                this, LAUNCHER_ACTIVITY_STOPPED_MESSAGE);
+    protected void onStart() {
+    TraceHelper.INSTANCE.beginSection(ON_START_EVT);
+    super.onStart();
+    if (!mDeferOverlayCallbacks) {
+        mOverlayManager.onActivityStarted();
+    }
+
+    mAppWidgetHolder.setActivityStarted(true);
+    TraceHelper.INSTANCE.endSection();
     }
 
     @Override
-    protected void onStart() {
-        TraceHelper.INSTANCE.beginSection(ON_START_EVT);
-        super.onStart();
-        if (!mDeferOverlayCallbacks) {
-            mOverlayManager.onActivityStarted();
-        }
+    protected void onStop() {
+    super.onStop();
+    if (mDeferOverlayCallbacks) {
+        checkIfOverlayStillDeferred();
+    } else {
+        mOverlayManager.onActivityStopped();
+    }
+    if (mQuickSpace != null) {
+        mQuickSpace.onPause();
+    }
+    hideKeyboard();
+    logStopAndResume(false /* isResume */);
+    mAppWidgetHolder.setActivityStarted(false);
 
-        mAppWidgetHolder.setActivityStarted(true);
-        TraceHelper.INSTANCE.endSection();
+    // Detach the exact same instance we registered as notification listener
+    if (mPopupDataProvider != null) {
+        NotificationListener.removeNotificationsChangedListener(mPopupDataProvider);
+    }
+
+    FloatingIconView.resetIconLoadResult();
+    AccessibilityManagerCompat.sendTestProtocolEventToTest(
+            this, LAUNCHER_ACTIVITY_STOPPED_MESSAGE);
     }
 
     @Override
     @CallSuper
     protected void onDeferredResumed() {
-        logStopAndResume(true /* isResume */);
+    logStopAndResume(true /* isResume */);
 
-        // Process any items that were added while Launcher was away.
-        ItemInstallQueue.INSTANCE.get(this)
-                .resumeModelPush(FLAG_ACTIVITY_PAUSED);
+    // Process any items that were added while Launcher was away.
+    ItemInstallQueue.INSTANCE.get(this)
+            .resumeModelPush(FLAG_ACTIVITY_PAUSED);
 
-        // Refresh shortcuts if the permission changed.
-        mModel.validateModelDataOnResume();
+    // Refresh shortcuts if the permission changed.
+    mModel.validateModelDataOnResume();
 
-        // Set the notification listener and fetch updated notifications when we resume
+    // Set the notification listener and fetch updated notifications when we resume.
+    // Ensure we don't accumulate duplicate listeners across resumes.
+    if (mPopupDataProvider != null) {
+        NotificationListener.removeNotificationsChangedListener(mPopupDataProvider);
         NotificationListener.addNotificationsChangedListener(mPopupDataProvider);
+    }
 
-        DiscoveryBounce.showForHomeIfNeeded(this);
-        mAppWidgetHolder.setActivityResumed(true);
+    DiscoveryBounce.showForHomeIfNeeded(this);
+    mAppWidgetHolder.setActivityResumed(true);
 
-        // Listen for IME changes to keep state up to date.
-        getRootView().setWindowInsetsAnimationCallback(
-                new WindowInsetsAnimation.Callback(DISPATCH_MODE_CONTINUE_ON_SUBTREE) {
-                    @Override
-                    public WindowInsets onProgress(WindowInsets windowInsets,
-                            List<WindowInsetsAnimation> windowInsetsAnimations) {
-                        return windowInsets;
-                    }
+    // Listen for IME changes to keep state up to date.
+    getRootView().setWindowInsetsAnimationCallback(
+            new WindowInsetsAnimation.Callback(DISPATCH_MODE_CONTINUE_ON_SUBTREE) {
+                @Override
+                public WindowInsets onProgress(WindowInsets windowInsets,
+                        List<WindowInsetsAnimation> windowInsetsAnimations) {
+                    return windowInsets;
+                }
 
-                    @Override
-                    public void onEnd(WindowInsetsAnimation animation) {
-                        WindowInsets insets = getRootView().getRootWindowInsets();
-                        boolean isImeVisible =
-                                insets != null && insets.isVisible(WindowInsets.Type.ime());
-                        getStatsLogManager().keyboardStateManager().setKeyboardState(
-                                isImeVisible ? SHOW : HIDE);
-                    }
-                });
+                @Override
+                public void onEnd(WindowInsetsAnimation animation) {
+                    WindowInsets insets = getRootView().getRootWindowInsets();
+                    boolean isImeVisible =
+                            insets != null && insets.isVisible(WindowInsets.Type.ime());
+                    getStatsLogManager().keyboardStateManager().setKeyboardState(
+                            isImeVisible ? SHOW : HIDE);
+                }
+            });
+    }
+
+    @Override
+    protected void onDestroy() {
+    // Final safety: detach notification listener when Launcher is destroyed
+    if (mPopupDataProvider != null) {
+        NotificationListener.removeNotificationsChangedListener(mPopupDataProvider);
+    }
+
+    super.onDestroy();
+    ACTIVITY_TRACKER.onContextDestroyed(this);
+
+    SettingsCache.INSTANCE.get(this).unregister(TOUCHPAD_NATURAL_SCROLLING,
+            mNaturalScrollingChangedListener);
+    ScreenOnTracker.INSTANCE.get(this).removeListener(mScreenOnListener);
+    PluginManagerWrapper.INSTANCE.get(this).removePluginListener(this);
+
+    mModel.removeCallbacks(this);
+    mRotationHelper.destroy();
+
+    mAppWidgetHolder.stopListening();
+    mAppWidgetHolder.destroy();
+    mWidgetPickerDataProvider.destroy();
+
+    TextKeyListener.getInstance().release();
+    mModelCallbacks.clearPendingBinds();
+    LauncherAppState.getIDP(this).removeOnChangeListener(this);
+    // if Launcher activity is recreated, {@link Window} including {@link ViewTreeObserver}
+    // could be preserved in {@link ActivityThread#scheduleRelaunchActivity(IBinder)} if the
+    // previous activity has not stopped, which could happen when wallpaper detects a color
+    // changes while launcher is still loading.
+    getRootView().getViewTreeObserver().removeOnPreDrawListener(mOnInitialBindListener);
+    mOverlayManager.onActivityDestroyed();
+    PillColorProvider.getInstance(mWorkspace.getContext()).unregisterObserver();
+
+    if (mQuickSpace != null) {
+        mQuickSpace.onDestroy();
+    }
     }
 
     private void logStopAndResume(boolean isResume) {
@@ -1823,39 +1870,6 @@ public class Launcher extends StatefulActivity<LauncherState>
         }
 
         super.onSaveInstanceState(outState);
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        ACTIVITY_TRACKER.onContextDestroyed(this);
-
-        SettingsCache.INSTANCE.get(this).unregister(TOUCHPAD_NATURAL_SCROLLING,
-                mNaturalScrollingChangedListener);
-        ScreenOnTracker.INSTANCE.get(this).removeListener(mScreenOnListener);
-        PluginManagerWrapper.INSTANCE.get(this).removePluginListener(this);
-
-        mModel.removeCallbacks(this);
-        mRotationHelper.destroy();
-
-        mAppWidgetHolder.stopListening();
-        mAppWidgetHolder.destroy();
-        mWidgetPickerDataProvider.destroy();
-
-        TextKeyListener.getInstance().release();
-        mModelCallbacks.clearPendingBinds();
-        LauncherAppState.getIDP(this).removeOnChangeListener(this);
-        // if Launcher activity is recreated, {@link Window} including {@link ViewTreeObserver}
-        // could be preserved in {@link ActivityThread#scheduleRelaunchActivity(IBinder)} if the
-        // previous activity has not stopped, which could happen when wallpaper detects a color
-        // changes while launcher is still loading.
-        getRootView().getViewTreeObserver().removeOnPreDrawListener(mOnInitialBindListener);
-        mOverlayManager.onActivityDestroyed();
-        PillColorProvider.getInstance(mWorkspace.getContext()).unregisterObserver();
-
-        if (mQuickSpace != null) {
-            mQuickSpace.onDestroy();
-        }
     }
 
     public LauncherAccessibilityDelegate getAccessibilityDelegate() {
