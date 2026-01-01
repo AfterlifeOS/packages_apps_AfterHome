@@ -34,6 +34,7 @@ import android.util.ArraySet;
 import android.util.Log;
 import android.util.Pair;
 
+import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
@@ -41,6 +42,7 @@ import androidx.annotation.WorkerThread;
 import com.android.launcher3.util.PackageUserKey;
 import com.android.launcher3.util.SettingsCache;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -66,8 +68,16 @@ public class NotificationListener extends NotificationListenerService {
     private static final int MSG_RANKING_UPDATE = 4;
 
     private static NotificationListener sNotificationListenerInstance = null;
-    private static final ArraySet<NotificationsChangedListener> sNotificationsChangedListeners =
+    private static final ArraySet<WeakReference<NotificationsChangedListener>> sNotificationsChangedListeners =
             new ArraySet<>();
+            private static void gcDeadListeners() {
+        for (int i = sNotificationsChangedListeners.size() - 1; i >= 0; i--) {
+            if (sNotificationsChangedListeners.valueAt(i).get() == null) {
+                sNotificationsChangedListeners.removeAt(i);
+                
+            }
+        }            
+    }
     private static boolean sIsConnected;
 
     private final Handler mWorkerHandler;
@@ -81,7 +91,10 @@ public class NotificationListener extends NotificationListenerService {
 
     private SettingsCache mSettingsCache;
     private SettingsCache.OnChangeListener mNotificationSettingsChangedListener;
-
+    
+    /**
+     * Service lifecycle
+     */
     public NotificationListener() {
         mWorkerHandler = new Handler(MODEL_EXECUTOR.getLooper(), this::handleWorkerMessage);
         mUiHandler = new Handler(Looper.getMainLooper(), this::handleUiMessage);
@@ -92,11 +105,13 @@ public class NotificationListener extends NotificationListenerService {
         return sIsConnected ? sNotificationListenerInstance : null;
     }
 
-    public static void addNotificationsChangedListener(NotificationsChangedListener listener) {
+    public static synchronized void addNotificationsChangedListener(NotificationsChangedListener listener) {
         if (listener == null) {
             return;
         }
-        sNotificationsChangedListeners.add(listener);
+        gcDeadListeners();
+        removeNotificationsChangedListener(listener); // dedupe
+        sNotificationsChangedListeners.add(new WeakReference<>(listener));
 
         NotificationListener notificationListener = getInstanceIfConnected();
         if (notificationListener != null) {
@@ -109,9 +124,15 @@ public class NotificationListener extends NotificationListenerService {
         }
     }
 
-    public static void removeNotificationsChangedListener(NotificationsChangedListener listener) {
-        if (listener != null) {
-            sNotificationsChangedListeners.remove(listener);
+    public static synchronized void removeNotificationsChangedListener(
+            NotificationsChangedListener listener) {
+            if (listener == null) return;
+            for (int i = sNotificationsChangedListeners.size() - 1; i >= 0; i--) {
+            NotificationsChangedListener l =
+                    sNotificationsChangedListeners.valueAt(i).get();
+            if (l == null || l == listener) {
+                sNotificationsChangedListeners.removeAt(i);
+            }
         }
     }
 
@@ -162,43 +183,69 @@ public class NotificationListener extends NotificationListenerService {
         return false;
     }
 
+        @SuppressWarnings("unchecked")
     private boolean handleUiMessage(Message message) {
         switch (message.what) {
-            case MSG_NOTIFICATION_POSTED:
+            case MSG_NOTIFICATION_POSTED: {
                 if (sNotificationsChangedListeners.size() > 0) {
-                    Pair<PackageUserKey, NotificationKeyData> msg = (Pair) message.obj;
-                    for (NotificationsChangedListener listener : sNotificationsChangedListeners) {
-                        listener.onNotificationPosted(msg.first, msg.second);
+                    gcDeadListeners();
+                    Pair<PackageUserKey, NotificationKeyData> msg =
+                            (Pair<PackageUserKey, NotificationKeyData>) message.obj;
+                    for (int i = 0; i < sNotificationsChangedListeners.size(); i++) {
+                        NotificationsChangedListener l =
+                                sNotificationsChangedListeners.valueAt(i).get();
+                        if (l != null) {
+                            l.onNotificationPosted(msg.first, msg.second);
+                        }
                     }
                     Log.i(TAG, "received notification posted event - " + msg.first);
                 } else {
                     Log.i(TAG, "received notification posted event, but there are no listeners");
-                }
+                  }
                 break;
-            case MSG_NOTIFICATION_REMOVED:
+            }
+
+            case MSG_NOTIFICATION_REMOVED: {
                 if (sNotificationsChangedListeners.size() > 0) {
-                    Pair<PackageUserKey, NotificationKeyData> msg = (Pair) message.obj;
-                    for (NotificationsChangedListener listener : sNotificationsChangedListeners) {
-                        listener.onNotificationRemoved(msg.first, msg.second);
+                    gcDeadListeners();
+                    Pair<PackageUserKey, NotificationKeyData> msg =
+                            (Pair<PackageUserKey, NotificationKeyData>) message.obj;
+                    for (int i = 0; i < sNotificationsChangedListeners.size(); i++) {
+                        NotificationsChangedListener l =
+                                sNotificationsChangedListeners.valueAt(i).get();
+                        if (l != null) {
+                            l.onNotificationRemoved(msg.first, msg.second);
+                        }
                     }
                     Log.i(TAG, "received notification removed event - " + msg.first);
                 } else {
                     Log.i(TAG, "received notification removed event, but there are no listeners");
-                }
+                  }
                 break;
-            case MSG_NOTIFICATION_FULL_REFRESH:
+            }
+
+            case MSG_NOTIFICATION_FULL_REFRESH: {
                 if (sNotificationsChangedListeners.size() > 0) {
-                    for (NotificationsChangedListener listener : sNotificationsChangedListeners) {
-                        listener.onNotificationFullRefresh(
-                                (List<StatusBarNotification>) message.obj);
+                    gcDeadListeners();
+                    List<StatusBarNotification> list =
+                            (List<StatusBarNotification>) message.obj;
+
+                    for (int i = 0; i < sNotificationsChangedListeners.size(); i++) {
+                        NotificationsChangedListener l =
+                                sNotificationsChangedListeners.valueAt(i).get();
+                        if (l != null) {
+                            l.onNotificationFullRefresh(list);
+                        }
                     }
-                    ((List<StatusBarNotification>) message.obj).forEach(sbn -> Log.i(TAG,
-                            "Handling notification state refresh for " + sbn.getPackageName() + "#"
-                                    + sbn.getUserId()));
+
+                    list.forEach(sbn -> Log.i(TAG,
+                            "Handling notification state refresh for "
+                                    + sbn.getPackageName() + "#" + sbn.getUserId()));
                 } else {
                     Log.i(TAG, "received notification refresh event, but there are no listeners");
-                }
+                  } 
                 break;
+            }
         }
         return true;
     }
@@ -215,7 +262,8 @@ public class NotificationListener extends NotificationListenerService {
         }
         return result == null ? new StatusBarNotification[0] : result;
     }
-
+    
+    @CallSuper
     @Override
     public void onListenerConnected() {
         super.onListenerConnected();
@@ -241,14 +289,45 @@ public class NotificationListener extends NotificationListenerService {
     private void onNotificationFullRefresh() {
         mWorkerHandler.obtainMessage(MSG_NOTIFICATION_FULL_REFRESH).sendToTarget();
     }
-
+    
+    @CallSuper
     @Override
     public void onListenerDisconnected() {
         super.onListenerDisconnected();
         Log.i(TAG, "onListenerDisconnected");
         sIsConnected = false;
         mSettingsCache.unregister(NOTIFICATION_BADGING_URI, mNotificationSettingsChangedListener);
+        if (mSettingsCache != null && mNotificationSettingsChangedListener != null) {
+            mSettingsCache.unregister(NOTIFICATION_BADGING_URI, mNotificationSettingsChangedListener);
+        }
         onNotificationFullRefresh();
+    }
+    
+    @Override
+    public void onDestroy() {
+        Log.i(TAG, "onDestroy");
+        sIsConnected = false;
+
+        if (sNotificationListenerInstance == this) {
+            sNotificationListenerInstance = null;
+        }
+
+        if (mSettingsCache != null && mNotificationSettingsChangedListener != null) {
+            try {
+                mSettingsCache.unregister(
+                        NOTIFICATION_BADGING_URI, mNotificationSettingsChangedListener);
+            } catch (IllegalStateException e) {
+                
+            }
+        }
+        mSettingsCache = null;
+        mNotificationSettingsChangedListener = null;
+
+        mNotificationGroupMap.clear();
+        mNotificationGroupKeyMap.clear();
+        mWorkerHandler.removeCallbacksAndMessages(null);
+        mUiHandler.removeCallbacksAndMessages(null);
+        super.onDestroy();
     }
 
     @Override

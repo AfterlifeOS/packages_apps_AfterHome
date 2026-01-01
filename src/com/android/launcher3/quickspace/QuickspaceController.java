@@ -42,9 +42,11 @@ import com.android.launcher3.util.MSMHProxy;
 import io.chaldeaprjkt.seraphixgoogle.SeraphixDataProvider;
 import io.chaldeaprjkt.seraphixgoogle.DataProviderListener;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -54,9 +56,10 @@ public class QuickspaceController implements OmniJawsClient.OmniJawsObserver,
 
     private static final String TAG = "Launcher3:QuickspaceController";
 
-    private final List<OnDataListener> mListeners =
+    private final List<WeakReference<OnDataListener>> mListeners = 
         Collections.synchronizedList(new ArrayList<>());
-    private final Context mContext;
+    
+    private final Context mAppContext;
     private final Map<String, Integer> mConditionMap;
     private QuickEventsController mEventsController;
     private OmniJawsClient mWeatherClient;
@@ -64,6 +67,7 @@ public class QuickspaceController implements OmniJawsClient.OmniJawsObserver,
     private Drawable mConditionImage;
     private boolean mOmniRegistered = false;
     private boolean mMediaRegistered = false;
+    private boolean mDestroyed = false;
 
     private static final long PSA_UPDATE_DELAY_MS = 3 * 60 * 1000;
 
@@ -78,55 +82,83 @@ public class QuickspaceController implements OmniJawsClient.OmniJawsObserver,
     private String mLastText;
     private int mLastBmpHash;
 
+    private final WeakReference<QuickspaceController> mSelfRef = new WeakReference<>(this);
+
     private final Runnable mOnDataUpdatedRunnable = new Runnable() {
-            @Override
-            public void run() {
-                for (OnDataListener list : new ArrayList<>(mListeners)) {
-                    list.onDataUpdated();
-                }
-            }
-        };
-
-    private Runnable mWeatherRunnable = new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    if (mWeatherClient == null) return;
-                    mWeatherClient.queryWeather(mContext);
-                    mWeatherInfo = mWeatherClient.getWeatherInfo();
-                    if (mWeatherInfo != null) {
-                        mConditionImage = mWeatherClient.getWeatherConditionImage(mContext, mWeatherInfo.conditionCode);
+        @Override
+        public void run() {
+            QuickspaceController controller = mSelfRef.get();
+            if (controller == null || controller.mDestroyed) return;
+            
+            synchronized (controller.mListeners) {
+                Iterator<WeakReference<OnDataListener>> it = controller.mListeners.iterator();
+                while (it.hasNext()) {
+                    WeakReference<OnDataListener> ref = it.next();
+                    OnDataListener listener = ref.get();
+                    if (listener == null) {
+                        it.remove();
+                    } else {
+                        try {
+                            listener.onDataUpdated();
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error notifying listener", e);
+                        }
                     }
-                    notifyListeners();
-                } catch(Exception e) {
-                    // Do nothing
                 }
             }
-        };
+        }
+    };
 
-    private Runnable mPsaRunnable = new Runnable() {
-            @Override
-            public void run() {
-                mHandler.removeCallbacks(this);
-                if (mEventsController == null) return;
-                mEventsController.updatePsonality();
-                mHandler.postDelayed(this, PSA_UPDATE_DELAY_MS);
-                notifyListeners();
+    private final Runnable mWeatherRunnable = new Runnable() {
+        @Override
+        public void run() {
+            QuickspaceController controller = mSelfRef.get();
+            if (controller == null || controller.mDestroyed) return;
+            
+            try {
+                if (controller.mWeatherClient == null) return;
+                controller.mWeatherClient.queryWeather(controller.mAppContext);
+                controller.mWeatherInfo = controller.mWeatherClient.getWeatherInfo();
+                if (controller.mWeatherInfo != null) {
+                    controller.mConditionImage = controller.mWeatherClient.getWeatherConditionImage(
+                        controller.mAppContext, controller.mWeatherInfo.conditionCode);
+                }
+                controller.notifyListeners();
+            } catch(Exception e) {
+                Log.e(TAG, "Weather update error", e);
             }
-        };
+        }
+    };
+
+    private final Runnable mPsaRunnable = new Runnable() {
+        @Override
+        public void run() {
+            QuickspaceController controller = mSelfRef.get();
+            if (controller == null || controller.mDestroyed) return;
+            
+            controller.mHandler.removeCallbacks(this);
+            if (controller.mEventsController == null) return;
+            
+            controller.mEventsController.updatePsonality();
+            controller.mHandler.postDelayed(this, PSA_UPDATE_DELAY_MS);
+            controller.notifyListeners();
+        }
+    };
 
     public interface OnDataListener {
         void onDataUpdated();
     }
 
     public QuickspaceController(Context context) {
-        mContext = context;
+        mAppContext = context.getApplicationContext();
         mConditionMap = initializeConditionMap();
-        mEventsController = new QuickEventsController(context);
+        mEventsController = new QuickEventsController(mAppContext);
     }
 
     private void decideWeatherProvider() {
-        String pref = LauncherPrefs.SHOW_QUICKSPACE_WEATHER_PROVIDER.get(mContext);
+        if (mDestroyed) return;
+        
+        String pref = LauncherPrefs.SHOW_QUICKSPACE_WEATHER_PROVIDER.get(mAppContext);
         WeatherProvider target = WeatherProvider.SERAPHIX;
         if ("seraphix".equals(pref)) {
             target = WeatherProvider.SERAPHIX;
@@ -144,6 +176,8 @@ public class QuickspaceController implements OmniJawsClient.OmniJawsObserver,
     }
 
     private void switchProvider(WeatherProvider target) {
+        if (mDestroyed) return;
+        
         if (mProvider == target) {
             // Ensure the chosen provider is actually set up
             if (target == WeatherProvider.SERAPHIX) {
@@ -178,24 +212,34 @@ public class QuickspaceController implements OmniJawsClient.OmniJawsObserver,
     }
 
     private void addOmniJawsIfEnabled() {
-        if (!LauncherPrefs.SHOW_QUICKSPACE_WEATHER.get(mContext)) return;
-        if (mWeatherClient == null) mWeatherClient = OmniJawsClient.get();
-        if (!mOmniRegistered) {
-            mWeatherClient.addObserver(mContext, this);
-            mOmniRegistered = true;
+        if (mDestroyed) return;
+        if (!LauncherPrefs.SHOW_QUICKSPACE_WEATHER.get(mAppContext)) return;
+        
+        try {
+            if (mWeatherClient == null) mWeatherClient = OmniJawsClient.get();
+            if (!mOmniRegistered && mWeatherClient != null) {
+                mWeatherClient.addObserver(mAppContext, this);
+                mOmniRegistered = true;
+            }
+            queryAndUpdateWeather();
+        } catch (Exception e) {
+            Log.e(TAG, "Error adding OmniJaws", e);
         }
-        queryAndUpdateWeather();
     }
 
     private boolean tryBindSeraphix(boolean silent) {
+        if (mDestroyed) return false;
+        
         try {
             if (mSeraphix == null) {
-                mSeraphix = new SeraphixDataProvider(mContext, 1022,
-                    LauncherPrefs.SERAPHIX_HOLDER_ID.get(mContext));
+                mSeraphix = new SeraphixDataProvider(mAppContext, 1022,
+                    LauncherPrefs.SERAPHIX_HOLDER_ID.get(mAppContext));
                 mSeraphix.setOnDataUpdated(mSeraphixListener);
             }
-            mSeraphix.bind(id -> { 
-                LauncherPrefs.get(mContext).put(LauncherPrefs.SERAPHIX_HOLDER_ID, id);
+            mSeraphix.bind(id -> {
+                if (!mDestroyed) {
+                    LauncherPrefs.get(mAppContext).put(LauncherPrefs.SERAPHIX_HOLDER_ID, id);
+                }
             });
             return true;
         } catch (Throwable t) {
@@ -218,6 +262,8 @@ public class QuickspaceController implements OmniJawsClient.OmniJawsObserver,
     }
 
     private final DataProviderListener mSeraphixListener = card -> {
+        if (mDestroyed) return;
+        
         try {
             updateWeatherData(card.getText(), card.getImage());
         } catch (Exception e) {
@@ -226,6 +272,8 @@ public class QuickspaceController implements OmniJawsClient.OmniJawsObserver,
     };
 
     private void updateWeatherData(String text, Bitmap image) {
+        if (mDestroyed) return;
+        
         int hash = (image == null) ? 0 : image.getGenerationId();
         if (TextUtils.equals(text, mSeraphixText) && hash == mLastBmpHash) {
             return;
@@ -237,24 +285,49 @@ public class QuickspaceController implements OmniJawsClient.OmniJawsObserver,
     }
 
     public void addListener(OnDataListener listener) {
-        if (listener == null) return;
-        boolean wasEmpty = mListeners.isEmpty();
-        if (!mListeners.contains(listener)) {
-            mListeners.add(listener);
+        if (listener == null || mDestroyed) return;
+        
+        synchronized (mListeners) {
+            mListeners.removeIf(ref -> ref.get() == null);
+            boolean alreadyRegistered = false;
+            for (WeakReference<OnDataListener> ref : mListeners) {
+                if (ref.get() == listener) {
+                    alreadyRegistered = true;
+                    break;
+                }
+            }
+            
+            boolean wasEmpty = mListeners.isEmpty();
+            if (!alreadyRegistered) {
+                mListeners.add(new WeakReference<>(listener));
+            }
+            
+            if (wasEmpty) {
+                decideWeatherProvider();
+                registerMediaController();
+                if (mEventsController != null) {
+                    mEventsController.initQuickEvents();
+                }
+                updatePSAevent();
+            }
         }
-        if (wasEmpty) {
-            decideWeatherProvider();
-            registerMediaController();
-            mEventsController.initQuickEvents();
-            updatePSAevent();
+        
+        // Notify the new listener immediately
+        try {
+            listener.onDataUpdated();
+        } catch (Exception e) {
+            Log.e(TAG, "Error in initial listener notification", e);
         }
-        listener.onDataUpdated();
     }
 
     private void removeOmniIfRegistered() {
-        if (mOmniRegistered && mWeatherClient != null) {
-            mWeatherClient.removeObserver(mContext, this);
-            mOmniRegistered = false;
+        try {
+            if (mOmniRegistered && mWeatherClient != null) {
+                mWeatherClient.removeObserver(mAppContext, this);
+                mOmniRegistered = false;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error removing OmniJaws observer", e);
         }
         mWeatherClient = null;
         mWeatherInfo = null;
@@ -263,14 +336,28 @@ public class QuickspaceController implements OmniJawsClient.OmniJawsObserver,
 
     public void removeListener(OnDataListener listener) {
         if (listener == null) return;
-        mListeners.remove(listener);
-        if (mListeners.isEmpty()) {
-            if (mProvider == WeatherProvider.OMNIJAWS) {
-                removeOmniIfRegistered();
-            } else {
-                unbindSeraphix();
+        
+        synchronized (mListeners) {
+            mListeners.removeIf(ref -> {
+                OnDataListener l = ref.get();
+                return l == null || l == listener;
+            });
+            
+            if (mListeners.isEmpty() && !mDestroyed) {
+                cleanupWhenEmpty();
             }
-            unregisterMediaController();
+        }
+    }
+
+    private void cleanupWhenEmpty() {
+        if (mProvider == WeatherProvider.OMNIJAWS) {
+            removeOmniIfRegistered();
+        } else {
+            unbindSeraphix();
+        }
+        unregisterMediaController();
+        
+        if (mHandler != null) {
             mHandler.removeCallbacks(mPsaRunnable);
             mHandler.removeCallbacks(mWeatherRunnable);
             mHandler.removeCallbacks(mOnDataUpdatedRunnable);
@@ -278,38 +365,43 @@ public class QuickspaceController implements OmniJawsClient.OmniJawsObserver,
     }
 
     public boolean isQuickEvent() {
-        return mEventsController.isQuickEvent();
+        return !mDestroyed && mEventsController != null && mEventsController.isQuickEvent();
     }
 
     public QuickEventsController getEventController() {
-        return mEventsController;
+        return mDestroyed ? null : mEventsController;
     }
 
     public boolean isWeatherAvailable() {
-        if (!LauncherPrefs.SHOW_QUICKSPACE_WEATHER.get(mContext)) return false;
+        if (mDestroyed || !LauncherPrefs.SHOW_QUICKSPACE_WEATHER.get(mAppContext)) return false;
+        
         if (mProvider == WeatherProvider.SERAPHIX) {
             return !TextUtils.isEmpty(mSeraphixText) || mSeraphixIcon != null;
         } else {
-            return mWeatherClient != null && mWeatherClient.isOmniJawsEnabled(mContext);
+            return mWeatherClient != null && mWeatherClient.isOmniJawsEnabled(mAppContext);
         }
     }
 
     public Drawable getWeatherIcon() {
+        if (mDestroyed) return null;
+        
         if (mProvider == WeatherProvider.SERAPHIX) {
-            return mSeraphixIcon != null ? mSeraphixIcon.loadDrawable(mContext) : null;
+            return mSeraphixIcon != null ? mSeraphixIcon.loadDrawable(mAppContext) : null;
         } else {
             return mConditionImage;
         }
     }
 
     public String getWeatherTemp() {
+        if (mDestroyed) return null;
+        
         if (mProvider == WeatherProvider.SERAPHIX) {
             return mSeraphixText;
         } else {
             if (mWeatherInfo == null) return null;
 
-            boolean shouldShowCity = LauncherPrefs.SHOW_QUICKSPACE_WEATHER_CITY.get(mContext);
-            boolean showWeatherText = LauncherPrefs.SHOW_QUICKSPACE_WEATHER_TEXT.get(mContext);
+            boolean shouldShowCity = LauncherPrefs.SHOW_QUICKSPACE_WEATHER_CITY.get(mAppContext);
+            boolean showWeatherText = LauncherPrefs.SHOW_QUICKSPACE_WEATHER_TEXT.get(mAppContext);
 
             StringBuilder weatherTemp = new StringBuilder();
             if (shouldShowCity) {
@@ -329,14 +421,14 @@ public class QuickspaceController implements OmniJawsClient.OmniJawsObserver,
     private String getConditionText(String input) {
         if (input == null || input.isEmpty()) return "";
 
-        Locale locale = mContext.getResources().getConfiguration().getLocales().get(0);
+        Locale locale = mAppContext.getResources().getConfiguration().getLocales().get(0);
         boolean isEnglish = locale.getLanguage().toLowerCase(Locale.ROOT).startsWith("en");
         String lowerCaseInput = input.toLowerCase();
 
         if (!isEnglish) {
             for (Map.Entry<String, Integer> entry : mConditionMap.entrySet()) {
                 if (lowerCaseInput.contains(entry.getKey())) {
-                    return mContext.getResources().getString(entry.getValue());
+                    return mAppContext.getResources().getString(entry.getValue());
                 }
             }
         }
@@ -371,43 +463,87 @@ public class QuickspaceController implements OmniJawsClient.OmniJawsObserver,
     }
 
     public void onPause() {
+        if (mDestroyed) return;
+        
         unregisterMediaController();
-        mHandler.removeCallbacks(mPsaRunnable);
-        mHandler.removeCallbacks(mWeatherRunnable);
-        mHandler.removeCallbacks(mOnDataUpdatedRunnable);
+        
+        if (mHandler != null) {
+            mHandler.removeCallbacks(mPsaRunnable);
+            mHandler.removeCallbacks(mWeatherRunnable);
+            mHandler.removeCallbacks(mOnDataUpdatedRunnable);
+        }
+        
         if (mProvider == WeatherProvider.SERAPHIX && mSeraphix != null) {
-            mSeraphix.pauseListening();
+            try {
+                mSeraphix.pauseListening();
+            } catch (Exception e) {
+                Log.e(TAG, "Error pausing Seraphix", e);
+            }
         }
     }
 
     public void onResume() {
+        if (mDestroyed) return;
+        
         registerMediaController();
         updateMediaController();
         decideWeatherProvider();
+        
         if (mProvider == WeatherProvider.SERAPHIX && mSeraphix != null) {
-            mSeraphix.resumeListening();
+            try {
+                mSeraphix.resumeListening();
+            } catch (Exception e) {
+                Log.e(TAG, "Error resuming Seraphix", e);
+            }
         }
+        
         updatePSAevent();
         notifyListeners();
     }
 
     public void onDestroy() {
+        if (mDestroyed) return;
+        mDestroyed = true;
+        
         unregisterMediaController();
-        mHandler.removeCallbacks(mPsaRunnable);
-        mHandler.removeCallbacks(mWeatherRunnable);
-        mHandler.removeCallbacks(mOnDataUpdatedRunnable);
-        for (OnDataListener listener : new ArrayList<>(mListeners)) {
-            removeListener(listener);
+        
+        if (mHandler != null) {
+            mHandler.removeCallbacks(mPsaRunnable);
+            mHandler.removeCallbacks(mWeatherRunnable);
+            mHandler.removeCallbacks(mOnDataUpdatedRunnable);
         }
+        
+        if (mProvider == WeatherProvider.SERAPHIX) {
+            unbindSeraphix();
+        } else {
+            removeOmniIfRegistered();
+        }
+        
+        if (mEventsController != null) {
+            mEventsController.destroy();
+            mEventsController = null;
+        }
+        
+        synchronized (mListeners) {
+            mListeners.clear();
+        }
+        
+        mWeatherInfo = null;
+        mConditionImage = null;
+        mSeraphixText = null;
+        mSeraphixIcon = null;
     }
 
     @Override
     public void weatherUpdated() {
+        if (mDestroyed) return;
         queryAndUpdateWeather();
     }
 
     @Override
     public void weatherError(int errorReason) {
+        if (mDestroyed) return;
+        
         Log.d(TAG, "weatherError " + errorReason);
         if (errorReason == OmniJawsClient.EXTRA_ERROR_DISABLED) {
             mWeatherInfo = null;
@@ -417,57 +553,88 @@ public class QuickspaceController implements OmniJawsClient.OmniJawsObserver,
 
     @Override
     public void updateSettings() {
+        if (mDestroyed) return;
+        
         Log.i(TAG, "updateSettings");
         queryAndUpdateWeather();
     }
 
     private void updatePSAevent() {
+        if (mDestroyed || mHandler == null) return;
+        
         mHandler.removeCallbacks(mPsaRunnable);
         mHandler.post(mPsaRunnable);
     }
 
     private void queryAndUpdateWeather() {
+        if (mDestroyed || mHandler == null) return;
+        
         mHandler.removeCallbacks(mWeatherRunnable);
         mHandler.post(mWeatherRunnable);
     }
 
     public void notifyListeners() {
+        if (mDestroyed || mHandler == null) return;
+        
         mHandler.removeCallbacks(mOnDataUpdatedRunnable);
         mHandler.post(mOnDataUpdatedRunnable);
     }
 
     private void registerMediaController() {
-        if (mMediaRegistered) return;
-        MSMHProxy.INSTANCE(mContext).addMediaMetadataListener(this);
-        mMediaRegistered = true;
+        if (mDestroyed || mMediaRegistered) return;
+        
+        try {
+            MSMHProxy.INSTANCE(mAppContext).addMediaMetadataListener(this);
+            mMediaRegistered = true;
+        } catch (Exception e) {
+            Log.e(TAG, "Error registering media controller", e);
+        }
     }
 
     private void unregisterMediaController() {
         if (!mMediaRegistered) return;
-        MSMHProxy.INSTANCE(mContext).removeMediaMetadataListener(this);
+        
+        try {
+            MSMHProxy.INSTANCE(mAppContext).removeMediaMetadataListener(this);
+        } catch (Exception e) {
+            Log.e(TAG, "Error unregistering media controller", e);
+        }
         mMediaRegistered = false;
     }
 
     private boolean updateMediaController() {
-        if (!LauncherPrefs.SHOW_QUICKSPACE_NOWPLAYING.get(mContext)) {
+        if (mDestroyed || !LauncherPrefs.SHOW_QUICKSPACE_NOWPLAYING.get(mAppContext)) {
             return false;
         }
-        MediaMetadata mediaMetadata = MSMHProxy.INSTANCE(mContext).getCurrentMediaMetadata();
-        boolean isPlaying = MSMHProxy.INSTANCE(mContext).isMediaPlaying();
-        String trackArtist = isPlaying && mediaMetadata != null ? mediaMetadata.getString(MediaMetadata.METADATA_KEY_ARTIST) : "";
-        String trackTitle = isPlaying && mediaMetadata != null ? mediaMetadata.getString(MediaMetadata.METADATA_KEY_TITLE) : "";
-        mEventsController.setMediaInfo(trackTitle, trackArtist, isPlaying);
-        mEventsController.updateQuickEvents();
-        return true;
+        
+        try {
+            MediaMetadata mediaMetadata = MSMHProxy.INSTANCE(mAppContext).getCurrentMediaMetadata();
+            boolean isPlaying = MSMHProxy.INSTANCE(mAppContext).isMediaPlaying();
+            String trackArtist = isPlaying && mediaMetadata != null ? 
+                mediaMetadata.getString(MediaMetadata.METADATA_KEY_ARTIST) : "";
+            String trackTitle = isPlaying && mediaMetadata != null ? 
+                mediaMetadata.getString(MediaMetadata.METADATA_KEY_TITLE) : "";
+            
+            if (mEventsController != null) {
+                mEventsController.setMediaInfo(trackTitle, trackArtist, isPlaying);
+                mEventsController.updateQuickEvents();
+            }
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating media controller", e);
+            return false;
+        }
     }
 
     @Override
     public void onMediaMetadataChanged() {
+        if (mDestroyed) return;
         if (updateMediaController()) notifyListeners();
     }
 
     @Override
     public void onPlaybackStateChanged() {
+        if (mDestroyed) return;
         if (updateMediaController()) notifyListeners();
     }
 }
