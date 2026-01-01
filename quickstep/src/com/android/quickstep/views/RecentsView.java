@@ -2584,6 +2584,9 @@ public abstract class RecentsView<
 
                     // Normalize Scale: Center should be 1.0f
                     float scale = rawScale / centerScale;
+                    if (Float.isNaN(scale) || Float.isInfinite(scale)) {
+                        scale = 1.0f;
+                    }
 
                     // Determine Visual Dimensions (Short vs Long axis) to match MIUI logic
                     // Spline X is scaled by the Short Axis (Stack bunching)
