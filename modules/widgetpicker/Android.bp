@@ -16,7 +16,7 @@ package {
     // See: http://go/android-license-faq
     default_applicable_licenses: ["Android-Apache-2.0"],
     default_visibility: [
-        "//packages/apps/Launcher3:__subpackages__",
+        "//packages/apps/AfterHome:__subpackages__",
         "//vendor:__subpackages__",
     ],
 }

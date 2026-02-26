@@ -144,11 +144,11 @@ android_test {
     ],
     use_embedded_native_libs: false,
     compile_multilib: "both",
-    instrumentation_for: "Launcher3",
+    instrumentation_for: "AfterHome",
     manifest: "AndroidManifest.xml",
     platform_apis: true,
     test_config: "Launcher3Tests.xml",
-    data: [":Launcher3"],
+    data: [":AfterHome"],
     plugins: ["dagger2-compiler"],
     test_suites: ["general-tests"],
     lint: {
@@ -232,7 +232,7 @@ android_robolectric_test {
         "android.test.mock.stubs.system",
         "truth",
     ],
-    instrumentation_for: "Launcher3",
+    instrumentation_for: "AfterHome",
     plugins: ["dagger2-compiler"],
     strict_mode: false,
 }
